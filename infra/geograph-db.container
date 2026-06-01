@@ -1,0 +1,17 @@
+[Unit]
+Description=Geograph database mirror
+After=network-online.target
+
+[Container]
+Image=ghcr.io/danielzfranklin/geograph-db-mirror:latest
+AutoUpdate=registry
+PublishPort=3307:3306
+Volume=geograph-db-mysql.volume:/var/lib/mysql
+Volume=geograph-db-cache.volume:/app/cache
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

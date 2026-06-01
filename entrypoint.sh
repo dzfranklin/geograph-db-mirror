@@ -54,6 +54,15 @@ fi
 
 echo "[entrypoint] MySQL is ready on port 3306."
 
+# # Shutdown
+
+shutdown() {
+    echo "[entrypoint] Shutting down..."
+    service cron stop
+    mysqladmin --socket=/var/run/mysqld/mysqld.sock -p"${MYSQL_ROOT_PASSWORD}" shutdown
+}
+trap shutdown SIGTERM SIGINT
+
 # # Cron
 
 SYNC_MINUTE=$(( RANDOM % 60 ))
@@ -64,4 +73,7 @@ service cron start
 # # Initial sync
 
 /app/sync.sh
-wait
+
+# # Wait while listening for traps
+sleep infinity &
+wait $!

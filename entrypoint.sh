@@ -49,7 +49,7 @@ else
     wait_for_mysql
 fi
 
-echo "[entrypoint] MySQL is ready on port 3306."
+echo "[entrypoint] MySQL is ready on port 3307."
 
 # # Shutdown
 
@@ -71,6 +71,12 @@ service cron start
 # # Initial sync
 
 /app/sync.sh
+
+# # API server
+
+php -S 0.0.0.0:3308 /app/api.php &
+
+echo "[entrypoint] API ready on port 3308."
 
 # # Wait while listening for traps
 sleep infinity &

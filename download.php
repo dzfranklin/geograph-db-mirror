@@ -42,7 +42,9 @@
 
 # 1. Add your database creditentials here: (this should be created - but the script will create the table inside the database)
 
-$db_hostname = '127.0.0.1';
+$db_hostname = '127.0.0.1:3307'; // mysql_connect accepts host:port
+$db_host = '127.0.0.1';
+$db_port = '3307';
 $db_username = 'geograph';
 $db_password = '';
 $db_database = 'geograph';
@@ -81,7 +83,7 @@ if (!is_dir($folder)) {
 $db = mysql_connect($db_hostname,$db_username,$db_password) or die("unable to connect : ".mysql_error()."\n");
 mysql_select_db($db_database,$db) or die("unable to select database : ".mysql_error()."\n");
 
-$path['mysql'] .= " -h".escapeshellarg($db_hostname)." -u".escapeshellarg($db_username).
+$path['mysql'] .= " -h".escapeshellarg($db_host)." -P".escapeshellarg($db_port)." -u".escapeshellarg($db_username).
                   " ".escapeshellarg($db_database);
 
 $url = "$server$table/?C=M;O=D";

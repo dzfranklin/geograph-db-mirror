@@ -24,10 +24,12 @@ COPY download.php /app/download.php
 COPY sync.sh /app/sync.sh
 COPY entrypoint.sh /entrypoint.sh
 COPY setup.sql /app/setup.sql
+COPY api.php /app/api.php
 RUN chmod +x /app/sync.sh /entrypoint.sh
 
 VOLUME ["/var/lib/mysql"]
 
 WORKDIR /app
-EXPOSE 3306
+EXPOSE 3307
+EXPOSE 3308
 ENTRYPOINT ["/entrypoint.sh"]

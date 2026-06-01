@@ -25,6 +25,9 @@ echo "[sync] Importing gridimage_snippet..."
 /bin/zcat "$SNIPPET_FILE" | $MYSQL_CMD
 
 rm -f "$SNIPPET_FILE"
+
+echo "[sync] Applying setup.sql..."
+$MYSQL_CMD < /app/setup.sql
 echo "[sync] gridimage_snippet import done"
 
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] All syncs complete"

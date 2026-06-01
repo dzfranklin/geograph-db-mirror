@@ -1,3 +1,10 @@
 [mysqld]
 bind-address = 0.0.0.0
 sql_mode = NO_ENGINE_SUBSTITUTION
+
+innodb_flush_log_at_trx_commit = 0
+innodb_doublewrite = 0
+innodb_flush_method = O_DIRECT
+innodb_buffer_pool_size = 5G
+innodb_log_file_size = 2G
+sync_binlog = 0

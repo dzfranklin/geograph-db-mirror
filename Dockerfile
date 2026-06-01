@@ -23,6 +23,7 @@ COPY mysql-custom.cnf /etc/mysql/conf.d/custom.cnf
 COPY download.php /app/download.php
 COPY sync.sh /app/sync.sh
 COPY entrypoint.sh /entrypoint.sh
+COPY setup.sql /app/setup.sql
 RUN chmod +x /app/sync.sh /entrypoint.sh
 
 VOLUME ["/var/lib/mysql"]

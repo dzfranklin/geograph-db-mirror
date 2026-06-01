@@ -65,9 +65,10 @@ trap shutdown SIGTERM SIGINT
 
 # # Cron
 
+SYNC_HOUR=${SYNC_HOUR:-5}
 SYNC_MINUTE=$(( RANDOM % 60 ))
-echo "${SYNC_MINUTE} 5 * * * /app/sync.sh" | crontab -
-echo "[entrypoint] Daily sync scheduled at ${SYNC_MINUTE} minutes past 05:00."
+echo "${SYNC_MINUTE} ${SYNC_HOUR} * * * /app/sync.sh" | crontab -
+echo "[entrypoint] Daily sync scheduled at ${SYNC_HOUR}:${SYNC_MINUTE}."
 service cron start
 
 # # Initial sync

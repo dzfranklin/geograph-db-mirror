@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-MYSQL_CMD="/usr/bin/mysql -h127.0.0.1 -ugeograph -pgeograph geograph"
+MYSQL_CMD="/usr/bin/mysql -h127.0.0.1 -ugeograph geograph"
 
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] Starting sync"
 

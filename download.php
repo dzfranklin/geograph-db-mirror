@@ -44,7 +44,7 @@
 
 $db_hostname = '127.0.0.1';
 $db_username = 'geograph';
-$db_password = 'geograph';
+$db_password = '';
 $db_database = 'geograph';
 
 # 2. Define a folder here for storing downloaded files (make sure exists and is writable) 
@@ -82,7 +82,7 @@ $db = mysql_connect($db_hostname,$db_username,$db_password) or die("unable to co
 mysql_select_db($db_database,$db) or die("unable to select database : ".mysql_error()."\n");
 
 $path['mysql'] .= " -h".escapeshellarg($db_hostname)." -u".escapeshellarg($db_username).
-                  " -p".escapeshellarg($db_password)." ".escapeshellarg($db_database);
+                  " ".escapeshellarg($db_database);
 
 $url = "$server$table/?C=M;O=D";
 

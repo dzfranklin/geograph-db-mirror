@@ -1,10 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-MYSQL_ROOT_PASSWORD=root
 MYSQL_DATABASE=geograph
 MYSQL_USER=geograph
-MYSQL_PASSWORD=geograph
 
 # # MySQL initialization
 
@@ -33,9 +31,8 @@ if [ -z "$(ls -A /var/lib/mysql 2>/dev/null)" ]; then
 
     echo "[entrypoint] Creating database and user..."
     mysql --socket=/var/run/mysqld/mysqld.sock <<SQL
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
-CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%';
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
@@ -59,7 +56,7 @@ echo "[entrypoint] MySQL is ready on port 3306."
 shutdown() {
     echo "[entrypoint] Shutting down..."
     service cron stop
-    mysqladmin --socket=/var/run/mysqld/mysqld.sock -p"${MYSQL_ROOT_PASSWORD}" shutdown
+    mysqladmin --socket=/var/run/mysqld/mysqld.sock shutdown
 }
 trap shutdown SIGTERM SIGINT
 

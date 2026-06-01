@@ -18,16 +18,31 @@ echo "[sync] gridimage_search sync done"
 SNIPPET_URL="https://data.geograph.org.uk/dumps/gridimage_snippet.mysql.gz"
 SNIPPET_FILE="/tmp/gridimage_snippet.mysql.gz"
 
-echo "[sync] Downloading gridimage_snippet..."
-/usr/bin/wget -q -O "$SNIPPET_FILE" "$SNIPPET_URL"
+SNIPPET_TIMESTAMP_FILE="/var/lib/mysql/geograph/gridimage_snippet.last_sync"
+TWENTY_HOURS_AGO=$(date -d '20 hours ago' +%s)
 
-echo "[sync] Importing gridimage_snippet..."
-/bin/zcat "$SNIPPET_FILE" | $MYSQL_CMD
+if [ -f "$SNIPPET_TIMESTAMP_FILE" ]; then
+    LAST_SYNC=$(date -r "$SNIPPET_TIMESTAMP_FILE" +%s)
+else
+    LAST_SYNC=0
+fi
 
-rm -f "$SNIPPET_FILE"
+if [ "$LAST_SYNC" -gt "$TWENTY_HOURS_AGO" ]; then
+    echo "[sync] gridimage_snippet synced less than 20 hours ago, skipping"
+else
+    echo "[sync] Downloading gridimage_snippet..."
+    /usr/bin/wget -q -O "$SNIPPET_FILE" "$SNIPPET_URL"
+
+    echo "[sync] Importing gridimage_snippet..."
+    /bin/zcat "$SNIPPET_FILE" | $MYSQL_CMD
+
+    rm -f "$SNIPPET_FILE"
+
+    touch "$SNIPPET_TIMESTAMP_FILE"
+    echo "[sync] gridimage_snippet import done"
+fi
 
 echo "[sync] Applying setup.sql..."
 $MYSQL_CMD < /app/setup.sql
-echo "[sync] gridimage_snippet import done"
 
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] All syncs complete"

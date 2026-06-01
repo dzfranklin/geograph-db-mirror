@@ -1,5 +1,23 @@
-ALTER TABLE gridimage_snippet ADD INDEX IF NOT EXISTS (gridimage_id);
-ALTER TABLE gridimage_snippet ADD INDEX IF NOT EXISTS (snippet_id);
+DROP PROCEDURE IF EXISTS add_index_if_not_exists;
+DELIMITER //
+CREATE PROCEDURE add_index_if_not_exists(tbl VARCHAR(64), col VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = tbl
+          AND COLUMN_NAME = col
+    ) THEN
+        SET @sql = CONCAT('ALTER TABLE `', tbl, '` ADD INDEX (', col, ')');
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END //
+DELIMITER ;
+
+CALL add_index_if_not_exists('gridimage_snippet', 'gridimage_id');
+CALL add_index_if_not_exists('gridimage_snippet', 'snippet_id');
 
 CREATE OR REPLACE VIEW gridimage AS
 SELECT

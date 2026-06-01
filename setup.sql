@@ -18,6 +18,7 @@ DELIMITER ;
 
 CALL add_index_if_not_exists('gridimage_snippet', 'gridimage_id');
 CALL add_index_if_not_exists('gridimage_snippet', 'snippet_id');
+CALL add_index_if_not_exists('snippet', 'snippet_id');
 
 CREATE OR REPLACE VIEW gridimage AS
 SELECT

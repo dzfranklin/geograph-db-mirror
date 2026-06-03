@@ -22,7 +22,7 @@ CALL add_index_if_not_exists('snippet', 'snippet_id');
 
 CREATE TABLE IF NOT EXISTS gridimage_recent (
     gridimage_id INT NOT NULL,
-    point_ll POINT NOT NULL SRID 4326,
+    point_ll POINT NOT NULL,
     PRIMARY KEY (gridimage_id),
     SPATIAL INDEX (point_ll)
 );

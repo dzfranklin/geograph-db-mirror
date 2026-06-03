@@ -67,7 +67,7 @@ else
         INSERT INTO gridimage_recent_new (gridimage_id, point_ll)
         SELECT gridimage_id, point_ll
         FROM gridimage_search
-        WHERE imagetaken >= YEAR(NOW()) - 5
+        WHERE imagetaken >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR)
           AND point_ll IS NOT NULL;
         RENAME TABLE gridimage_recent TO gridimage_recent_old, gridimage_recent_new TO gridimage_recent;
         DROP TABLE gridimage_recent_old;

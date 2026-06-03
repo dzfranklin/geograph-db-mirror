@@ -147,16 +147,15 @@ if (count($plain_rows) <= $limit) {
     exit;
 }
 
-// Dense bbox: sample by dividing into a grid and taking one row per cell
+// Dense bbox: sample by dividing into a grid, collecting 2 per cell, then randomly selecting limit
 $grid_n = (int) ceil(sqrt($limit));
 $latStep = ($maxLat - $minLat) / $grid_n;
 $lngStep = ($maxLng - $minLng) / $grid_n;
 
-$cell_stmt = make_bbox_polygon_stmt($db, 1);
-$cell_limit = 1;
+$cell_stmt = make_bbox_polygon_stmt($db, 2);
+$cell_limit = 2;
 
-$seen_ids = [];
-$features = [];
+$pool = [];
 
 for ($row_i = 0; $row_i < $grid_n; $row_i++) {
     for ($col_i = 0; $col_i < $grid_n; $col_i++) {
@@ -182,22 +181,15 @@ for ($row_i = 0; $row_i < $grid_n; $row_i++) {
             send_error(500, mysqli_error($db));
         }
 
-        $db_row = mysqli_fetch_assoc($result);
+        while ($db_row = mysqli_fetch_assoc($result)) {
+            $pool[] = $db_row;
+        }
         mysqli_free_result($result);
-
-        if ($db_row === null) {
-            continue;
-        }
-
-        $id = $db_row['gridimage_id'];
-        if (isset($seen_ids[$id])) {
-            continue;
-        }
-        $seen_ids[$id] = true;
-
-        $features[] = rows_to_features([$db_row], $excluded)[0];
     }
 }
+
+shuffle($pool);
+$features = rows_to_features(array_slice($pool, 0, $limit), $excluded);
 
 mysqli_close($db);
 

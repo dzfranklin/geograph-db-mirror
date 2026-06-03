@@ -58,6 +58,8 @@ if [ "$LAST_RECENT_SYNC" -gt "$TWENTY_HOURS_AGO" ]; then
 else
     echo "[sync] Refreshing gridimage_recent..."
     $MYSQL_CMD -e "
+        DROP TABLE IF EXISTS gridimage_recent_new;
+        DROP TABLE IF EXISTS gridimage_recent_old;
         CREATE TABLE gridimage_recent_new (
             gridimage_id INT NOT NULL,
             point_ll POINT NOT NULL,

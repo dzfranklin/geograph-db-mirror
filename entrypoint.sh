@@ -55,17 +55,26 @@ echo "[entrypoint] MySQL is ready on port 3307."
 
 shutdown() {
     echo "[entrypoint] Shutting down..."
+    if [ -n "$SYNC_PID" ]; then
+        echo "[entrypoint] Killing active sync (pid $SYNC_PID)..."
+        kill "$SYNC_PID" 2>/dev/null || true
+    fi
     mysqladmin --socket=/var/run/mysqld/mysqld.sock shutdown
 }
 trap shutdown SIGTERM SIGINT
 
 # # Sync loop
 
+SYNC_PID=""
+
 sync_loop() {
     echo "[entrypoint] Starting sync loop..."
     while true; do
         echo "[entrypoint] Running sync..."
-        /app/sync.sh
+        /app/sync.sh &
+        SYNC_PID=$!
+        wait $SYNC_PID
+        SYNC_PID=""
         echo "[entrypoint] Sync complete, sleeping for 7 days..."
         sleep 604800
     done

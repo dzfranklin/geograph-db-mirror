@@ -45,21 +45,35 @@ fi
 echo "[sync] Applying setup.sql..."
 $MYSQL_CMD < /app/setup.sql
 
-echo "[sync] Refreshing gridimage_recent..."
-$MYSQL_CMD -e "
-    CREATE TABLE gridimage_recent_new (
-        gridimage_id INT NOT NULL,
-        point_ll POINT NOT NULL,
-        PRIMARY KEY (gridimage_id),
-        SPATIAL INDEX (point_ll)
-    );
-    INSERT INTO gridimage_recent_new (gridimage_id, point_ll)
-    SELECT gridimage_id, point_ll
-    FROM gridimage_search
-    WHERE imagetaken >= YEAR(NOW()) - 5
-      AND point_ll IS NOT NULL;
-    RENAME TABLE gridimage_recent TO gridimage_recent_old, gridimage_recent_new TO gridimage_recent;
-    DROP TABLE gridimage_recent_old;
-"
+RECENT_TIMESTAMP_FILE="/var/lib/mysql/geograph/gridimage_recent.last_sync"
+
+if [ -f "$RECENT_TIMESTAMP_FILE" ]; then
+    LAST_RECENT_SYNC=$(date -r "$RECENT_TIMESTAMP_FILE" +%s)
+else
+    LAST_RECENT_SYNC=0
+fi
+
+if [ "$LAST_RECENT_SYNC" -gt "$TWENTY_HOURS_AGO" ]; then
+    echo "[sync] gridimage_recent refreshed less than 20 hours ago, skipping"
+else
+    echo "[sync] Refreshing gridimage_recent..."
+    $MYSQL_CMD -e "
+        CREATE TABLE gridimage_recent_new (
+            gridimage_id INT NOT NULL,
+            point_ll POINT NOT NULL,
+            PRIMARY KEY (gridimage_id),
+            SPATIAL INDEX (point_ll)
+        );
+        INSERT INTO gridimage_recent_new (gridimage_id, point_ll)
+        SELECT gridimage_id, point_ll
+        FROM gridimage_search
+        WHERE imagetaken >= YEAR(NOW()) - 5
+          AND point_ll IS NOT NULL;
+        RENAME TABLE gridimage_recent TO gridimage_recent_old, gridimage_recent_new TO gridimage_recent;
+        DROP TABLE gridimage_recent_old;
+    "
+    touch "$RECENT_TIMESTAMP_FILE"
+    echo "[sync] gridimage_recent refresh done"
+fi
 
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] All syncs complete"

@@ -47,12 +47,19 @@ $MYSQL_CMD < /app/setup.sql
 
 echo "[sync] Refreshing gridimage_recent..."
 $MYSQL_CMD -e "
-    TRUNCATE TABLE gridimage_recent;
-    INSERT INTO gridimage_recent (gridimage_id, point_ll)
+    CREATE TABLE gridimage_recent_new (
+        gridimage_id INT NOT NULL,
+        point_ll POINT NOT NULL,
+        PRIMARY KEY (gridimage_id),
+        SPATIAL INDEX (point_ll)
+    );
+    INSERT INTO gridimage_recent_new (gridimage_id, point_ll)
     SELECT gridimage_id, point_ll
     FROM gridimage_search
     WHERE imagetaken >= YEAR(NOW()) - 5
       AND point_ll IS NOT NULL;
+    RENAME TABLE gridimage_recent TO gridimage_recent_old, gridimage_recent_new TO gridimage_recent;
+    DROP TABLE gridimage_recent_old;
 "
 
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] All syncs complete"

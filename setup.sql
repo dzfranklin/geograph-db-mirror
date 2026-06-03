@@ -20,6 +20,13 @@ CALL add_index_if_not_exists('gridimage_snippet', 'gridimage_id');
 CALL add_index_if_not_exists('gridimage_snippet', 'snippet_id');
 CALL add_index_if_not_exists('snippet', 'snippet_id');
 
+CREATE TABLE IF NOT EXISTS gridimage_recent (
+    gridimage_id INT NOT NULL,
+    point_ll POINT NOT NULL SRID 4326,
+    PRIMARY KEY (gridimage_id),
+    SPATIAL INDEX (point_ll)
+);
+
 CREATE OR REPLACE VIEW gridimage AS
 SELECT
     gsearch.*,

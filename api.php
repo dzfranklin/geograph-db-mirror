@@ -58,26 +58,49 @@ if (!mysqli_set_charset($db, 'utf8mb4')) {
 
 $excluded = ['point_ll', 'point_xy'];
 
-function make_bbox_polygon_stmt($db, $limit) {
+function make_bbox_polygon_stmt($db, $recent, $limit) {
     // point_ll stores POINT(lng, lat) so X=lng, Y=lat
     // polygon corners: minLng minLat, maxLng minLat, maxLng maxLat, minLng maxLat, minLng minLat
-    $stmt = mysqli_prepare($db, "
-        SELECT *, ST_X(point_ll) AS _lng, ST_Y(point_ll) AS _lat
-        FROM gridimage
-        WHERE MBRContains(
-            ST_GeomFromText(CONCAT(
-                'POLYGON((',
-                ?, ' ', ?, ',',
-                ?, ' ', ?, ',',
-                ?, ' ', ?, ',',
-                ?, ' ', ?, ',',
-                ?, ' ', ?,
-                '))'
-            )),
-            point_ll
-        )
-        LIMIT ?
-    ");
+    if ($recent) {
+        // spatial filter on gridimage_recent, PK join to gridimage for full row
+        $sql = "
+            SELECT g.*, ST_X(r.point_ll) AS _lng, ST_Y(r.point_ll) AS _lat
+            FROM gridimage_recent r
+            JOIN gridimage g ON g.gridimage_id = r.gridimage_id
+            WHERE MBRContains(
+                ST_GeomFromText(CONCAT(
+                    'POLYGON((',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?,
+                    '))'
+                )),
+                r.point_ll
+            )
+            LIMIT ?
+        ";
+    } else {
+        $sql = "
+            SELECT *, ST_X(point_ll) AS _lng, ST_Y(point_ll) AS _lat
+            FROM gridimage
+            WHERE MBRContains(
+                ST_GeomFromText(CONCAT(
+                    'POLYGON((',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?, ',',
+                    ?, ' ', ?,
+                    '))'
+                )),
+                point_ll
+            )
+            LIMIT ?
+        ";
+    }
+    $stmt = mysqli_prepare($db, $sql);
     if (!$stmt) {
         send_error(500, mysqli_error($db));
     }
@@ -111,7 +134,7 @@ function rows_to_features($rows, $excluded) {
 }
 
 // First do a plain query for limit+1 rows
-$stmt = make_bbox_polygon_stmt($db, $limit + 1);
+$stmt = make_bbox_polygon_stmt($db, false, $limit + 1);
 $fetch_limit = $limit + 1;
 mysqli_stmt_bind_param($stmt, 'ddddddddddi',
     $minLng, $minLat,
@@ -152,10 +175,35 @@ $grid_n = (int) ceil(sqrt($limit));
 $latStep = ($maxLat - $minLat) / $grid_n;
 $lngStep = ($maxLng - $minLng) / $grid_n;
 
-$cell_stmt = make_bbox_polygon_stmt($db, 2);
 $cell_limit = 2;
+$recent_stmt = make_bbox_polygon_stmt($db, true, $cell_limit);
+$all_stmt = make_bbox_polygon_stmt($db, false, $cell_limit);
 
 $pool = [];
+
+function query_cell($stmt, $db, $cellMinLng, $cellMinLat, $cellMaxLng, $cellMaxLat, $cell_limit) {
+    mysqli_stmt_bind_param($stmt, 'ddddddddddi',
+        $cellMinLng, $cellMinLat,
+        $cellMaxLng, $cellMinLat,
+        $cellMaxLng, $cellMaxLat,
+        $cellMinLng, $cellMaxLat,
+        $cellMinLng, $cellMinLat,
+        $cell_limit
+    );
+    if (!mysqli_stmt_execute($stmt)) {
+        send_error(500, mysqli_stmt_error($stmt));
+    }
+    $result = mysqli_stmt_get_result($stmt);
+    if ($result === false) {
+        send_error(500, mysqli_error($db));
+    }
+    $rows = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $rows[] = $row;
+    }
+    mysqli_free_result($result);
+    return $rows;
+}
 
 for ($row_i = 0; $row_i < $grid_n; $row_i++) {
     for ($col_i = 0; $col_i < $grid_n; $col_i++) {
@@ -164,27 +212,14 @@ for ($row_i = 0; $row_i < $grid_n; $row_i++) {
         $cellMinLng = $minLng + $col_i * $lngStep;
         $cellMaxLng = $minLng + ($col_i + 1) * $lngStep;
 
-        mysqli_stmt_bind_param($cell_stmt, 'ddddddddddi',
-            $cellMinLng, $cellMinLat,
-            $cellMaxLng, $cellMinLat,
-            $cellMaxLng, $cellMaxLat,
-            $cellMinLng, $cellMaxLat,
-            $cellMinLng, $cellMinLat,
-            $cell_limit
-        );
-        if (!mysqli_stmt_execute($cell_stmt)) {
-            send_error(500, mysqli_stmt_error($cell_stmt));
+        $rows = query_cell($recent_stmt, $db, $cellMinLng, $cellMinLat, $cellMaxLng, $cellMaxLat, $cell_limit);
+        if (count($rows) === 0) {
+            $rows = query_cell($all_stmt, $db, $cellMinLng, $cellMinLat, $cellMaxLng, $cellMaxLat, $cell_limit);
         }
 
-        $result = mysqli_stmt_get_result($cell_stmt);
-        if ($result === false) {
-            send_error(500, mysqli_error($db));
+        foreach ($rows as $row) {
+            $pool[] = $row;
         }
-
-        while ($db_row = mysqli_fetch_assoc($result)) {
-            $pool[] = $db_row;
-        }
-        mysqli_free_result($result);
     }
 }
 

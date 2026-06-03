@@ -45,4 +45,14 @@ fi
 echo "[sync] Applying setup.sql..."
 $MYSQL_CMD < /app/setup.sql
 
+echo "[sync] Refreshing gridimage_recent..."
+$MYSQL_CMD -e "
+    TRUNCATE TABLE gridimage_recent;
+    INSERT INTO gridimage_recent (gridimage_id, point_ll)
+    SELECT gridimage_id, point_ll
+    FROM gridimage_search
+    WHERE imagetaken >= YEAR(NOW()) - 5
+      AND point_ll IS NOT NULL;
+"
+
 echo "[sync $(date '+%Y-%m-%d %H:%M:%S')] All syncs complete"

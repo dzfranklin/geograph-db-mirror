@@ -135,7 +135,7 @@ if (!empty($listing)) {
 
                 if (empty($m[0])) {
                         continue; // skip files without a timestamp (e.g. gridimage_search.schema)
-                } elseif ($m[0] >= $criteria) {
+                } elseif ($m[0] > $criteria) {
                         array_unshift($import,$file);
                 } else {
                         break;

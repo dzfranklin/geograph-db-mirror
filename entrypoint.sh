@@ -55,22 +55,25 @@ echo "[entrypoint] MySQL is ready on port 3307."
 
 shutdown() {
     echo "[entrypoint] Shutting down..."
-    service cron stop
     mysqladmin --socket=/var/run/mysqld/mysqld.sock shutdown
 }
 trap shutdown SIGTERM SIGINT
 
-# # Cron
+# # Sync loop
 
-SYNC_HOUR=${SYNC_HOUR:-5}
-SYNC_MINUTE=${SYNC_MINUTE:-$(( RANDOM % 60 ))}
-echo "${SYNC_MINUTE} ${SYNC_HOUR} * * * /app/sync.sh" | crontab -
-echo "[entrypoint] Daily sync scheduled at ${SYNC_HOUR}:${SYNC_MINUTE}."
-service cron start
+sync_loop() {
+    echo "[entrypoint] Starting sync loop..."
+    while true; do
+        echo "[entrypoint] Running sync..."
+        /app/sync.sh
+        echo "[entrypoint] Sync complete, sleeping for 7 days..."
+        sleep 604800
+    done
+}
 
-# # Initial sync
+# # Initial sync + loop
 
-/app/sync.sh
+sync_loop &
 
 # # API server
 
